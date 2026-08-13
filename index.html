@@ -1,32 +1,476 @@
 <!DOCTYPE html>
 <html lang="de">
   <head>
+    <meta charset="utf-8">
     <meta name"viewport" content="width=device-width, initial-scale=1.0">
     <title>KLINGDESIGN, Kontakt</title>
     <link rel="stylesheet" href="css/formate.css">
-  </head>
+
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="manifest.json">
+
+</head>
+    <title>KLINGDESIGN</title>
+<style>
+.gallery {
+  & a {
+    text-decoration: none;
+    display: inline-block;
+
+    &:focus {
+      outline: 2px solid black;
+    }
+
+    & img {
+      width: 100px;
+      display: block;
+    }
+  }
+}
+
+#gallery-fullview {
+  width: 100vw; height: 100vh;
+  padding: 2em 5vw 8vh 5vw;
+  background-color: #888;
+  box-sizing: border-box;
+  border-radius: 10px;
+
+  &::backdrop {
+    background: rgb(200 200 200 /.8) ;
+  }
+
+  & figure {
+    border: thin solid #aaa;
+    margin: 0;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    background: #ccc;
+  }
+
+  & img {
+    display: block;
+    margin: auto;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  & figcaption {
+    font-style: italic;
+    text-align: center;
+    background-color: white;
+  }
+
+  & button {
+    position: absolute;
+    width: 2rem;
+    height: 2rem;
+    cursor: pointer;
+    border: 0;
+    background-color: transparent;
+    --fill: none;
+    --stroke: white;
+
+    &:focus {
+      outline: none;
+    }
+
+    &[value=close],
+    &[value=shuffle],
+    &[value=play] {
+      top: 0;
+      right: 0;
+      --fill: firebrick;
+
+      &:hover,
+      &:focus {
+        --fill: red;
+      }
+    }
+
+    &[value=shuffle],
+    &[value=play] {
+      & svg {
+        &:nth-of-type(1) {
+          display: inline;
+        }
+
+        &:nth-of-type(2) {
+          display: none;
+        }
+      }
+    }
+
+    &[value=shuffle] {
+      right: 4rem;
+
+      .shuffle & svg {
+        &:nth-of-type(1) {
+          display: none;
+        }
+
+        &:nth-of-type(2) {
+          display: inline;
+        }
+      }
+    }
+
+    &[value=play] {
+      right: 8rem;
+
+      .play & svg {
+        &:nth-of-type(1) {
+          display: none;
+        }
+
+        &:nth-of-type(2) {
+          display: inline;
+        }
+      }
+    }
+
+    &[value=prev],
+    &[value=next] {
+      top: calc(50% - 100px);
+      width: 100px;
+      height: 200px;
+      padding: 0;
+      --stroke: #fff6;
+
+      &:hover,
+      &:focus {
+        --stroke: skyblue;
+      }
+    }
+
+    &[value=prev] {
+      left: 2vw;
+    }
+
+    &[value=next] {
+      right: 2vw;
+    }
+  }
+}
+
+.visually-hidden {
+	position: absolute !important;
+	clip: rect(1px, 1px, 1px, 1px) !important;
+	padding: 0 !important;
+	border: 0 !important;
+	height: 1px !important;
+	width: 1px !important;
+	overflow: hidden !important;
+	white-space: nowrap !important;
+}
+
+</style>
+
+<script>
+
+'use strict';
+document.addEventListener('DOMContentLoaded', function () {
+
+  // Zeit in ms zum betrachten der Bilder im Automatik-Modus
+  const zeitZumBetrachten = 1000;
+
+  // click-Handler auf alle Galerien legen. KÖNNTE man auch auf den Body legen und Bubbling nutzen, aber dann bekommt
+  // man mit currentTarget die Galerie nicht geschenkt (und muss sie vom target mit closest(''.gallery') suchen)
+  document.querySelectorAll(".gallery")
+          .forEach( gallery => gallery.addEventListener("click", handleGalleryClick) );
+  // EIGENEN click-Handler auf den Fullview.
+  document.getElementById("gallery-fullview")
+          .addEventListener("click", handleFullviewClickAndKeydown);
+  // EIGENEN keydown-Handler aufs Dokument.
+  document.addEventListener("keydown", handleFullviewClickAndKeydown);
+
+  // Klick in einer Galerie ist simpel, das behandelt alles die showInFullview Funktion,
+  // die auch vom handleFullviewClickAndKeydown zum navigieren verwendet wird.
+  function handleGalleryClick(event) {
+    // event.target ist das img Element oder welches HTML auch immer sonst im Thumb steckt. Suche
+    // das a Element als Bezugspunkt für die Fullview-Anzeige heraus
+    const clickedLink = event.target.closest("a");
+
+    // Nicht auf einen Link geklickt? Nichts tun.
+    if (!clickedLink) return;
+    event.preventDefault();
+
+    // Delegiere den Rest...
+    showInFullview(clickedLink);
+  }
+
+  function showInFullview(link) {
+          // der Fullscreen-Viewer
+    const fullview = document.getElementById("gallery-fullview"),
+          // die Galerie zum geklickten Link
+          gallery = link.closest(".gallery"),
+          // Das Thumbnail-Bild darin, brauchen wir für ...
+          thumb = link.querySelector("img"),
+          // ... den Caption-Text, der aus dem alt-Attribut generiert wird.
+          caption = thumb ? thumb.alt : "";
+
+    // Den angeklickten Link zum aria-selected Element machen
+    link.parentElement.querySelectorAll("a[aria-selected]").forEach(link => link.removeAttribute("aria-selected"));
+    link.setAttribute("aria-selected", "true");
+
+    // src-Attribut im Vollbild auf das verlinkte Bild setzen und Caption in figcaption eintragen
+    fullview.querySelector("img").src = link.href;
+    fullview.querySelector("figcaption").textContent = caption;
+
+    // Galerie-ID speichern für click-Handler im Fullview und Fullview einblenden (falls noch nicht passiert)
+    fullview.dataset.gallery = gallery.id;
+    fullview.showModal();
+  }
+
+  function handleFullviewClickAndKeydown(event) {
+    const fullview = document.getElementById("gallery-fullview")
+    if(!fullview) return;
+    const gallery = document.getElementById(fullview.dataset.gallery);
+    if(!gallery) return;
+    const currentThumb = gallery.querySelector("a[aria-selected]");
+    if (!currentThumb) return;
+    let nextThumb,action="",stopped;
+
+    if(event.type == "keydown") {
+      action = event.key; // Welche Taste wurde gedrückt?
+    }
+    if(event.type == "click") {
+      const clickedButton = event.target.closest("button");
+      // Nicht auf einen Button geklickt? Nichts tun.
+      if (!clickedButton) return;
+      action = clickedButton.value; // Welcher Button wurde geklickt?
+    }
+
+    switch (action) {
+      case 'close':
+      case 'Escape':
+      case 'x':
+        stopAnimations(fullview);
+        fullview.close();
+        fullview.dataset.gallery = null;
+        gallery.querySelector("a[aria-selected]").focus();
+        break;
+      case 'prev':
+      case 'ArrowLeft':
+        // Ausführliche Version
+        nextThumb = navigateDOM(currentThumb,
+                                elem => elem.previousElementSibling,
+                                elem => elem.tagName == "A");
+        if (!nextThumb)
+          nextThumb = gallery.querySelector("a:last-of-type")
+
+        showInFullview(nextThumb);
+        break;
+      case 'next':
+      case 'ArrowRight':
+        // Kompaktversion als Einzeiler
+        showInFullview(navigateDOM(currentThumb, elem => elem.nextElementSibling, elem => elem.tagName == "A") || gallery.querySelector("a:first-of-type"));
+        break;
+      case 'play':
+      case 'r':
+        // Evtl. laufende Animationen benden
+        stopped = stopAnimations(fullview);
+        if (!stopped.playStopped)  {
+          // Mit setInterval die Bilder nacheinander zeigen (next animieren)
+          fullview.play = setInterval(function() {
+           showInFullview(navigateDOM(gallery.querySelector("a[aria-selected]"), elem => elem.nextElementSibling, elem => elem.tagName == "A") ||
+                        gallery.querySelector("a:first-of-type"));
+          }, zeitZumBetrachten);
+          fullview.classList.add("play");
+        }
+        break;
+      case 'shuffle':
+      case 's':
+        // Evtl. laufende Animationen benden
+        stopped = stopAnimations(fullview);
+        if (!stopped.shuffleStopped) {
+          // Per Zufall das nächste Bilde ermitteln und anzeigen
+          const allThumbs = gallery.querySelectorAll("a");
+          let randomNumber,lastNumber=-1;
+          fullview.shuffle = setInterval(function() {
+            do {
+              randomNumber = Math.floor(Math.random()*allThumbs.length);
+            } while(randomNumber == lastNumber)
+            showInFullview(allThumbs[randomNumber]);
+            lastNumber = randomNumber;
+          }, zeitZumBetrachten);
+          fullview.classList.add("shuffle");
+        }
+        break;
+      case 'p':
+        // Evtl. laufende Animationen benden
+        stopAnimations(fullview);
+        break;
+    }
+
+    /* Helper: Navigiere schrittweise durch's DOM, bis eine Bedingung erfüllt ist
+     * "current" - Ausgangspunkt (ein HTML Elemnt)
+     * Was das "nächste" Thumbnail-Element ist, legt der proceed-Callback fest.
+     * Die Funktion sucht ausdrücklich nach a-Elementen - wenn andere Elemente im
+     * Container sind, werden sie übersprungen. Wird kein Link mehr gefunden, gibt
+     * die Funktion null zurück - um den Rest kümmere sich bitte der Aufrufer.
+     */
+    function navigateDOM(current, proceed, checkFound) {
+      if (!current)
+        return null;
+      while (current = proceed(current)) {
+        if (checkFound(current))
+          break;
+      }
+      return current;
+    }
+
+    /* Helper: Beende evtl. laufende Animationen und gebe zurück,
+     * welche Animation beendet wurde. */
+    function stopAnimations(fullviewElement) {
+      let playStopped = false,
+          shuffleStopped = false;
+      if(fullview.play) {
+        clearInterval(fullviewElement.play);
+        fullviewElement.play = null;
+        fullviewElement.classList.remove("play");
+        playStopped = true;
+      }
+      if(fullviewElement.shuffle) {
+        clearInterval(fullviewElement.shuffle);
+        fullviewElement.shuffle = null;
+        fullviewElement.classList.remove("shuffle");
+        shuffleStopped = true;
+      }
+      return { "playStopped": playStopped, "shuffleStopped": shuffleStopped };
+    }
+
+  }
+
+});
+
+</script>
+
+
+
   <body>
     <header>
       <a id="backlink" href"/"><img src="images/favicon-klingdesign-klein.png" alt="logo"></a>
       <p>KLINGDESIGN</p>
-      <p>Leuchtenobjekte und Lichtkuns</p>
+      <p>Leuchtenobjekte und Lichtkunst</p>
     </header>
+
     <nav>
       <ul>
 	<li><a href="index.html">Startseite</a></li>
+	<li><a href="chrisiane.html">Christiane Kling</a></li>
+	<li><a href="aktuell.html">Aktuell</a></li>
+	<li><a href="lichtobjekte.html">Lichtobjekte</a></li>
+	<li><a href="lichtboot-atmos.html">Lichtboot Atmos</a></li>
+	<li><a href="lichtkunst-labor.html">Lichtkunst Labor</a></li>
+	<li><a href="atelier.html">Atelier</a></li>
 	<li><a tabindex="0" aria-current="page">Kontakt und Impressum</a></li>
       </ul>
     </nav>
 
-<body>
+    <h1>Leuchtenobjekte und Lichtkunst</h1>
 
-<h1>KLINGDESIGN</h1>
-<h2>Leuchtenobjekte und Lichtkunst<h2>
+      <section id="klingdesign" class="gallery">
+	<h2>Klingdesign 2026</h2>
+
+	<a href="https://www.klingdesign.de/wp-content/uploads/2025/08/Projektraum-Kopie2b-1024x728.jpg"><!--images/an544-random.png">-->
+	  <img src="images/favicon-klingdesign-klein.png" alt="Zufallsgenerator">
+	</a>
+
+	<a href="https://www.klingdesign.de/wp-content/uploads/2024/05/IMG_8683-Kopie-2-1024x549.jpg"><!--images/christiane-mit-spirallampe.jpg">-->
+	  <img src="images/favicon-klingdesign-klein.png" alt="Zufallsgenerator">
+	</a>
+
+	<a href="https://www.klingdesign.de/wp-content/uploads/2021/01/Lichtskulptur-Formbau2-768x512.jpg"><!--!images/einladung.jpg">-->
+	  <img src="images/favicon-klingdesign-klein.png" alt="Zufallsgenerator">
+	</a>
+
+	<a href="https://www.klingdesign.de/wp-content/uploads/2020/12/Maske1-1-768x512.jpg"><!--images/einweggleichrichtung.png">-->
+	  <img src="images/favicon-klingdesign-klein.png" alt="Zufallsgenerator">
+	</a>
+
+	<a href="https://www.klingdesign.de/wp-content/uploads/2020/12/Baumarchitektur-1.jpg"><!--images/ueberspannungserkennung.png">-->
+	  <img src="images/favicon-klingdesign-klein.png" alt="Zufallsgenerator">
+	</a>
+
+	<a href="https://www.klingdesign.de/wp-content/uploads/2020/12/Baumarchitektur4-2.jpg"><!--images/logo-klingdesign-1.jpg">-->
+	  <img src="images/favicon-klingdesign-klein.png" alt="Zufallsgenerator">
+	</a>
+
+	<a href="https://www.klingdesign.de/wp-content/uploads/2021/01/IMG_4858-768x957.jpg"><!--images/logo-klingdesign-2.jpg">-->
+	  <img src="images/favicon-klingdesign-klein.png" alt="Zufallsgenerator">
+	</a>
+
+	<a href="https://www.klingdesign.de/wp-content/uploads/2021/01/1h-768x431.jpg"><!--images/logo-klingdesign-3.jpg">-->
+	  <img src="images/favicon-klingdesign-klein.png" alt="Zufallsgenerator">
+	</a>
+
+	<a href="https://www.klingdesign.de/wp-content/uploads/2021/01/IMG_2007-1-768x431.jpg"><!--images/logo-klingdesign-4.jpg">-->
+	  <img src="images/favicon-klingdesign-klein.png" alt="Zufallsgenerator">
+	</a>
+      </section>
+
+	<p>Bei einem Klick auf die <em>Thumbnail</em>-Vorschau erhalten Sie eine Großansicht.</p>
+
+<dialog id="gallery-fullview">
+  <figure>
+    <img alt="described by figcaption" src='data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg"%3E%3C/svg%3E'>
+    <figcaption></figcaption>
+  </figure>
+  <button type="button" value="close"><span class="visually-hidden">Schließen</span>
+    <svg viewBox='0 0 100 100'>
+      <rect width='100' height='100' fill='var(--fill)' />
+      <path d='M20,20 l60,60 m0,-60 l-60,60' fill='none' stroke='white' stroke-width='15' stroke-linecap='round'/>
+     </svg>
+   </button>
+  <button type="button" value="play" aria-label="play/pause animation"><span class="visually-hidden">automatisch abspielen</span>
+    <svg viewBox='0 0 200 200'>
+      <rect width='200' height='200' fill='var(--fill)' />
+      <path d='M60,30 l90,70 -90,70z' fill='white' stroke='white' stroke-width='30' stroke-linejoin='round' />
+    </svg>
+    <svg viewBox='0 0 100 100'>
+      <rect width='100' height='100' fill='var(--fill)' />
+      <path d='M30,20 L30,80 M70,20 L70,80' fill='none' stroke='white' stroke-width='25' stroke-linecap='round'/>
+     </svg>
+  </button>
+  <button type="button" value="shuffle"><span class="visually-hidden">shuffle</span>
+    <svg viewBox='0 0 376 376'>
+      <rect x='0' y='0' width='100%' height='100%' fill='var(--fill)' stroke='black' stroke-width='1'/>
+      <path d='M376 280l-79 68v-45h-13c-42 0-73-19-98-44 10-12 19-23 27-34 2-3 4-5 6-7 19 19 39 33 66 33h13v-38L376 280zM0 129h39c25 0 44 12 62 29 3-4 6-8 9-12 7-10 15-20 23-30 -25-23-55-40-95-40H0V129zM297 28v45h-13c-69 0-108 51-143 97 -31 41-58 76-101 76H0v53h39c69 0 108-51 143-97 31-41 58-76 101-76h13v38l79-68L297 28z' fill='white'/>
+    </svg>
+    <svg viewBox='0 0 100 100'>
+      <rect width='100' height='100' fill='var(--fill)' />
+      <path d='M30,20 L30,80 M70,20 L70,80' fill='none' stroke='white' stroke-width='25' stroke-linecap='round'/>
+    </svg>
+  </button>
+  <button type="button" value="prev"><span class="visually-hidden">vorheriges Bild</span>
+    <svg width='100' height='200' viewBox='0 0 100 200' xmlns='http://www.w3.org/2000/svg'>
+      <path id='left' d='M90,10 l-80,90 l80,90' fill='var(--fill)' stroke='var(--stroke)' stroke-width='15' stroke-linecap='round'/>
+    </svg>
+  </button>
+  <button type="button" value="next"><span class="visually-hidden">nächstes Bild</span>
+    <svg width='100' height='200' viewBox='0 0 100 200'>
+      <path id='right' d='M10,10 l80,90 l-80,90' fill='var(--fill)' stroke='var(--stroke)' stroke-width='15' stroke-linecap='round'/>
+    </svg>
+  </button>
+</dialog>
+
+<figcaption></figcaption>
+	</figure>
+	<button id="close-dialog">Schließen</button>
+</dialog>
+    </p>
+
+</section>
+
 
 <footer>
       <a href="kontakt.html">Kontakt</a>
       <a href="kontakt.html#impressum">Impressum</a>
       <p>© 2026 Klingdesign</p>
-</footer>
+    </footer>
   </body>
 </html>
