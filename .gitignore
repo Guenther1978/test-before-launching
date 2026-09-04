@@ -19,3 +19,7 @@ Gemfile.lock
 
 # Ignore temporary files
 *#
+*~
+
+# Ignore downloads from HiDrive
+*HiDrive
