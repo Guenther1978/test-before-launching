@@ -82,3 +82,157 @@ kbd {
     font-size: 0.9em;
     padding: 0 0.5em;
 }
+
+/* Slideshow */
+.gallery {
+  & a {
+    text-decoration: none;
+    display: inline-block;
+
+    &:focus {
+      outline: 2px solid black;
+    }
+
+    & img {
+      width: 100px;
+      display: block;
+    }
+  }
+}
+
+#gallery-fullview {
+  width: 100vw; height: 100vh;
+  padding: 2em 5vw 8vh 5vw;
+  background-color: #888;
+  box-sizing: border-box;
+  border-radius: 10px;
+
+  &::backdrop {
+    background: rgb(200 200 200 /.8) ;
+  }
+
+  & figure {
+    border: thin solid #aaa;
+    margin: 0;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    background: #ccc;
+  }
+
+  & img {
+    display: block;
+    margin: auto;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  & figcaption {
+    font-style: italic;
+    text-align: center;
+    background-color: white;
+  }
+
+  & button {
+    position: absolute;
+    width: 2rem;
+    height: 2rem;
+    cursor: pointer;
+    border: 0;
+    background-color: transparent;
+    --fill: none;
+    --stroke: white;
+
+    &:focus {
+      outline: none;
+    }
+
+    &[value=close],
+    &[value=shuffle],
+    &[value=play] {
+      top: 0;
+      right: 0;
+      --fill: firebrick;
+
+      &:hover,
+      &:focus {
+        --fill: red;
+      }
+    }
+
+    &[value=shuffle],
+    &[value=play] {
+      & svg {
+        &:nth-of-type(1) {
+          display: inline;
+        }
+
+        &:nth-of-type(2) {
+          display: none;
+        }
+      }
+    }
+
+    &[value=shuffle] {
+      right: 4rem;
+
+      .shuffle & svg {
+        &:nth-of-type(1) {
+          display: none;
+        }
+
+        &:nth-of-type(2) {
+          display: inline;
+        }
+      }
+    }
+
+    &[value=play] {
+      right: 8rem;
+
+      .play & svg {
+        &:nth-of-type(1) {
+          display: none;
+        }
+
+        &:nth-of-type(2) {
+          display: inline;
+        }
+      }
+    }
+
+    &[value=prev],
+    &[value=next] {
+      top: calc(50% - 100px);
+      width: 100px;
+      height: 200px;
+      padding: 0;
+      --stroke: #fff6;
+
+      &:hover,
+      &:focus {
+        --stroke: skyblue;
+      }
+    }
+
+    &[value=prev] {
+      left: 2vw;
+    }
+
+    &[value=next] {
+      right: 2vw;
+    }
+  }
+}
+
+.visually-hidden {
+	position: absolute !important;
+	clip: rect(1px, 1px, 1px, 1px) !important;
+	padding: 0 !important;
+	border: 0 !important;
+	height: 1px !important;
+	width: 1px !important;
+	overflow: hidden !important;
+	white-space: nowrap !important;
+}
