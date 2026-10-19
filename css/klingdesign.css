@@ -1,3 +1,25 @@
+.grid-container {
+    display: grid;
+    grid-template-columns: 150px 1fr; /* fixed width for pictures, flexible for text */
+    gap: 20px;
+    align-items: center; /* vertically center content */
+}
+
+.grid-container a img {
+    width: 100%; /* image fills the width of its grid cell */
+    height: auto; /* maintain aspect ratio */
+    display: block; /* remove inline spacing */
+    object-fit: cover; /* optional: crop image to fill nicely */
+    border-radius: 8px; /* optional: rounded corners */
+}
+
+.text-content {
+    font-family: Arial, sans-serif;
+}
+
+
+/* Pictures in the left column, text in the right */
+
 .media {
     list-style-type: none;
     max-width: 150em;
@@ -30,6 +52,8 @@ li:hover {
     background: #F1F3F4;
     cursor: pointer;
 }
+
+
 /* Grundlayout fr SELFHTML-Beispiele */
 
 body {
